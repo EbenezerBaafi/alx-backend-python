@@ -15,7 +15,7 @@ def connect_to_alx_prodev():
         print(f"Error connecting to alx_prodev database: {e}")
         return None
 
-def stream_users(min_age=None, max_age=None):
+def stream_users():
     """
     Generator function that streams rows from the user_data table one by one.
     Uses server-side cursor for memory efficiency with large datasets.
@@ -41,16 +41,16 @@ def stream_users(min_age=None, max_age=None):
         conditions = []
         params = []
         
-        if min_age is not None:
-            conditions.append("age >= %s")
-            params.append(min_age)
+        # if min_age is not None:
+        #     conditions.append("age >= %s")
+        #     params.append(min_age)
         
-        if max_age is not None:
-            conditions.append("age <= %s")
-            params.append(max_age)
+        # if max_age is not None:
+        #     conditions.append("age <= %s")
+        #     params.append(max_age)
         
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+        # if conditions:
+        #     query += " WHERE " + " AND ".join(conditions)
         
         query += " ORDER BY name"
         
@@ -81,7 +81,7 @@ def main():
         print(f"{user['name']} ({user['email']}) - Age: {user['age']}")
     
     print("\nStreaming users aged 25-40:")
-    for user in stream_users(min_age=25, max_age=40):
+    for user in stream_users():
         print(f"{user['name']} - Age: {user['age']}")
 
 if __name__ == "__main__":
