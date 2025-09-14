@@ -8,9 +8,9 @@ def connect_db():
     try:
         connection = psycopg2.connect(
             host='localhost',
-            user='postgres',  # Replace with your PostgreSQL username
-            password='2Cedicray123@.',  # Replace with your PostgreSQL password
-            database='postgres'  # Connect to default postgres database first
+            user='postgres',  
+            password='2Cedicray123@.',  
+            database='postgres'  
         )
         connection.autocommit = True
         return connection
@@ -41,8 +41,8 @@ def connect_to_prodev():
         connection = psycopg2.connect(
             host='localhost',
             database='ALX_prodev',
-            user='postgres',  # Replace with your PostgreSQL username
-            password='2Cedicray123@.'  # Replace with your PostgreSQL password
+            user='postgres',  
+            password='2Cedicray123@.' 
         )
         return connection
     except Error as e:
