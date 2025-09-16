@@ -1,5 +1,6 @@
 import psycopg2
 import functools
+from datetime import datetime
 
 #### decorator to log SQL queries
 
