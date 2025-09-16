@@ -4,7 +4,7 @@ from psycopg2 import sql
 class DatabaseConnection:
     """A context manager for handling PostgreSQL database connections automatically using psycopg2."""
     
-    def __init__(self, host='localhost', database='database', user='postgres', password='password', port=5432):
+    def __init__(self, host='localhost', database='database', user='user', password='password', port=5432):
         """
         Initialize the database connection context manager.
         
@@ -75,8 +75,40 @@ class DatabaseConnection:
 
 # Example usage demonstrating the context manager
 if __name__ == "__main__":
+    # Create sample users table and insert data (for demonstration)
+    def setup_sample_data():
+        """Create sample table and data for demonstration."""
+        with DatabaseConnection(
+            host='localhost',
+            database='ALX_prodev',
+            user='postgres',
+            password='2Cedicray123@.'
+        ) as cursor:
+            # Create users table if it doesn't exist
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Insert sample data
+            cursor.execute("""
+                INSERT INTO users (name, email) VALUES 
+                ('John Doe', 'john@example.com'),
+                ('Jane Smith', 'jane@example.com'),
+                ('Bob Johnson', 'bob@example.com')
+                ON CONFLICT (email) DO NOTHING
+            """)
+            print("Sample data setup completed")
+
+    setup_sample_data()
+
+    """"The sample data above was created to meet the requirements of the task, since it requires a users table."""
+
     try:
-        
         # Use the context manager to query users
         with DatabaseConnection(
             host='localhost',
@@ -86,7 +118,9 @@ if __name__ == "__main__":
         ) as cursor:
             
             # Execute the SELECT query
-            cursor.execute("SELECT * FROM user_data")
+            cursor.execute("SELECT * FROM user_data as users")
+            cursor.execute("SELECT * FROM users")
+            
             
             # Fetch and print results
             results = cursor.fetchall()
