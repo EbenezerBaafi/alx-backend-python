@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Unit tests for utils module.
 
@@ -7,6 +7,7 @@ using the unittest framework with parameterized testing.
 """
 
 import unittest
+from unittest.mock import patch, Mock
 from parameterized import parameterized
 import utils
 
@@ -54,6 +55,33 @@ class TestAccessNestedMap(unittest.TestCase):
         # Check that the exception message contains the missing key
         missing_key = path[0] if not nested_map else path[-1]
         self.assertIn(str(missing_key), str(context.exception))
+
+
+class TestGetJson(unittest.TestCase):
+    """
+    Test class for get_json function.
+    
+    This class contains unit tests to verify that get_json correctly
+    fetches JSON data from URLs using mocked HTTP requests.
+    """
+
+    @parameterized.expand([
+        ("http://example.com", {"payload": True}),
+        ("http://holberton.io", {"payload": False}),
+    ])
+    @patch('requests.get')
+    def test_get_json(self, test_url, test_payload, mock_get):
+        """
+        Test that get_json returns the expected result with mocked requests.
+        
+        Args:
+            test_url (str): The URL to test
+            test_payload (dict): The expected JSON payload
+            mock_get: Mocked requests.get method
+        """
+        mock_get.return_value.json.return_value = test_payload
+        self.assertEqual(utils.get_json(test_url), test_payload)
+        mock_get.assert_called_once_with(test_url)
 
 
 if __name__ == '__main__':
