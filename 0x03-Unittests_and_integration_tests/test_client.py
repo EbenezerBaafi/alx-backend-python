@@ -37,18 +37,18 @@ class TestGithubOrgClient(unittest.TestCase):
             org_name (str): The organization name to test
         """
         test_payload = {"login": org_name, "id": 12345}
-        
+
         with patch('client.get_json') as mock_get_json:
             mock_get_json.return_value = test_payload
-            client = GithubOrgClient(org_name)
-            
+
             # Clear any memoize cache if it exists
+            client = GithubOrgClient(org_name)
             if hasattr(client, '_memoize_cache'):
                 client._memoize_cache.clear()
-            
+
             result = client.org
             expected_url = f"https://api.github.com/orgs/{org_name}"
-            
+
             self.assertEqual(result, test_payload)
             mock_get_json.assert_called_once_with(expected_url)
 
@@ -63,13 +63,13 @@ class TestGithubOrgClient(unittest.TestCase):
         mock_payload = {
             "repos_url": "https://api.github.com/orgs/test-org/repos"
         }
-        
+
         with patch.object(GithubOrgClient, 'org',
                          new_callable=PropertyMock) as mock_org:
             mock_org.return_value = mock_payload
             client = GithubOrgClient("test-org")
             result = client._public_repos_url
-            
+
             self.assertEqual(result, mock_payload["repos_url"])
 
     @patch('client.get_json')
@@ -79,7 +79,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
         This test mocks both get_json and _public_repos_url to verify that
         public_repos correctly processes the payload and returns repo names.
-        
+
         Args:
             mock_get_json: Mocked get_json function
         """
@@ -90,24 +90,24 @@ class TestGithubOrgClient(unittest.TestCase):
             {"name": "repo3", "license": None}
         ]
         mock_get_json.return_value = mock_repos_payload
-        
+
         # Mock the _public_repos_url property
         with patch.object(GithubOrgClient, '_public_repos_url',
                          new_callable=PropertyMock) as mock_public_repos_url:
             mock_public_repos_url.return_value = (
                 "https://api.github.com/orgs/test/repos"
             )
-            
+
             client = GithubOrgClient("test-org")
             result = client.public_repos()
-            
+
             # Expected result: list of repo names
             expected_repos = ["repo1", "repo2", "repo3"]
             self.assertEqual(result, expected_repos)
-            
+
             # Verify that _public_repos_url was accessed once
             mock_public_repos_url.assert_called_once()
-            
+
             # Verify that get_json was called once with the mocked URL
             mock_get_json.assert_called_once_with(
                 "https://api.github.com/orgs/test/repos"
@@ -135,12 +135,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
 @parameterized_class(
     ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
-    [(
-        fixtures.org_payload,
-        fixtures.repos_payload,
-        fixtures.expected_repos,
-        fixtures.apache2_repos
-    )]
+    [fixtures.TEST_PAYLOAD[0]]
 )
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """
@@ -171,7 +166,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
                 Mock object with json method returning appropriate payload
             """
             from unittest.mock import Mock
-            
+
             mock_response = Mock()
             if url == cls.org_payload.get("repos_url"):
                 mock_response.json.return_value = cls.repos_payload
@@ -179,7 +174,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
                 mock_response.json.return_value = cls.org_payload
             else:
                 mock_response.json.return_value = {}
-            
+
             return mock_response
 
         cls.get_patcher = patch('requests.get', side_effect=side_effect)
