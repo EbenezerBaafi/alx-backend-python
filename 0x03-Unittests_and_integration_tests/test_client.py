@@ -8,8 +8,9 @@ using the unittest framework with parameterized testing and mocking.
 
 import unittest
 from unittest.mock import patch, PropertyMock
-from parameterized import parameterized
+from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
+import fixtures
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -130,6 +131,69 @@ class TestGithubOrgClient(unittest.TestCase):
         """
         result = GithubOrgClient.has_license(repo, license_key)
         self.assertEqual(result, expected)
+
+
+@parameterized_class(
+    ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
+    [(
+        fixtures.org_payload,
+        fixtures.repos_payload,
+        fixtures.expected_repos,
+        fixtures.apache2_repos
+    )]
+)
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """
+    Integration test class for GithubOrgClient.
+
+    This class performs integration tests using real fixture data
+    to test the complete workflow of GithubOrgClient without making
+    actual HTTP requests.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Set up class fixtures before running integration tests.
+
+        This method mocks requests.get to return predefined payloads
+        based on the URL being requested, allowing integration tests
+        to run without making actual HTTP calls.
+        """
+        def side_effect(url):
+            """
+            Side effect function for mocking requests.get.
+
+            Args:
+                url (str): The URL being requested
+
+            Returns:
+                Mock object with json method returning appropriate payload
+            """
+            from unittest.mock import Mock
+            
+            mock_response = Mock()
+            if url == cls.org_payload.get("repos_url"):
+                mock_response.json.return_value = cls.repos_payload
+            elif "orgs/" in url:
+                mock_response.json.return_value = cls.org_payload
+            else:
+                mock_response.json.return_value = {}
+            
+            return mock_response
+
+        cls.get_patcher = patch('requests.get', side_effect=side_effect)
+        cls.get_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Clean up after integration tests.
+
+        This method stops the requests.get patcher to restore
+        normal HTTP functionality.
+        """
+        cls.get_patcher.stop()
 
 
 if __name__ == '__main__':
