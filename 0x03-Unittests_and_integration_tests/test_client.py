@@ -63,7 +63,7 @@ class TestGithubOrgClient(unittest.TestCase):
             "repos_url": "https://api.github.com/orgs/test-org/repos"
         }
         
-        with patch.object(GithubOrgClient, 'org', 
+        with patch.object(GithubOrgClient, 'org',
                          new_callable=PropertyMock) as mock_org:
             mock_org.return_value = mock_payload
             client = GithubOrgClient("test-org")
@@ -91,9 +91,11 @@ class TestGithubOrgClient(unittest.TestCase):
         mock_get_json.return_value = mock_repos_payload
         
         # Mock the _public_repos_url property
-        with patch.object(GithubOrgClient, '_public_repos_url', 
+        with patch.object(GithubOrgClient, '_public_repos_url',
                          new_callable=PropertyMock) as mock_public_repos_url:
-            mock_public_repos_url.return_value = "https://api.github.com/orgs/test/repos"
+            mock_public_repos_url.return_value = (
+                "https://api.github.com/orgs/test/repos"
+            )
             
             client = GithubOrgClient("test-org")
             result = client.public_repos()
@@ -106,7 +108,9 @@ class TestGithubOrgClient(unittest.TestCase):
             mock_public_repos_url.assert_called_once()
             
             # Verify that get_json was called once with the mocked URL
-            mock_get_json.assert_called_once_with("https://api.github.com/orgs/test/repos")
+            mock_get_json.assert_called_once_with(
+                "https://api.github.com/orgs/test/repos"
+            )
 
 
 if __name__ == '__main__':
