@@ -22,6 +22,7 @@ class GithubOrgClient:
         """Init method of GithubOrgClient"""
         self._org_name = org_name
 
+    @property
     @memoize
     def org(self) -> Dict:
         """Memoize org"""
@@ -39,7 +40,7 @@ class GithubOrgClient:
 
     def public_repos(self, license: str = None) -> List[str]:
         """Public repos"""
-        json_payload = self.repos_payload
+        json_payload = self.repos_payload()
         public_repos = [
             repo["name"] for repo in json_payload
             if license is None or self.has_license(repo, license)
