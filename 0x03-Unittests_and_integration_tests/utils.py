@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Utility functions module.
 
@@ -6,8 +6,9 @@ This module provides utility functions for working with nested data structures
 and other common operations.
 """
 
-from typing import Dict, Tuple, Any, Union
+from typing import Dict, Tuple, Any, Union, Callable
 import requests
+from functools import wraps
 
 
 def access_nested_map(nested_map: Dict[str, Any], path: Tuple[str, ...]) -> Any:
@@ -55,3 +56,27 @@ def get_json(url: str) -> Dict[str, Any]:
     """
     response = requests.get(url)
     return response.json()
+
+
+def memoize(func: Callable) -> Callable:
+    """
+    Decorator that caches the result of method calls.
+    
+    This decorator caches the return value of a method so that subsequent
+    calls with the same arguments return the cached result without
+    re-executing the method.
+    
+    Args:
+        func (Callable): The function to be memoized
+        
+    Returns:
+        Callable: The wrapped function with memoization
+    """
+    @wraps(func)
+    def wrapper(self):
+        if not hasattr(self, '_memoize_cache'):
+            self._memoize_cache = {}
+        if func.__name__ not in self._memoize_cache:
+            self._memoize_cache[func.__name__] = func(self)
+        return self._memoize_cache[func.__name__]
+    return wrapper
