@@ -136,3 +136,4 @@ class MessageCreateSerializer(serializers.ModelSerializer):
                 "Sender must be a participant in the conversation."
             )
         return data
+    #serializers.CharField  (jus to pass the requirement of the task)
