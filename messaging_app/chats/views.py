@@ -6,46 +6,18 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from .models import User, Conversation, Message
 from .serializers import (
-    UserSerializer, 
-    ConversationSerializer, 
+    UserSerializer,
+    ConversationSerializer,
     ConversationListSerializer,
-    MessageSerializer, 
+    MessageSerializer,
     MessageCreateSerializer
 )
 # Add this import at the top of chats/views.py
-from .permissions import (
-    IsOwnerOrReadOnly,
-    IsParticipantInConversation, 
-    IsMessageOwner,
-    CanAccessConversation
-)
+from .permissions import IsParticipantOfConversation
 
 # Update your ConversationViewSet
 class ConversationViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, CanAccessConversation]
-    # ... rest of your code
-
-# Update your MessageViewSet  
-class MessageViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, IsMessageOwner]
-
-
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for viewing users.
-    """
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'user_id'
-
-
-class ConversationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing conversations.
-    Provides CRUD operations for conversations.
-    """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
     lookup_field = 'conversation_id'
     
     def get_queryset(self):
@@ -60,29 +32,21 @@ class ConversationViewSet(viewsets.ModelViewSet):
         return ConversationSerializer
     
     def create(self, request, *args, **kwargs):
-        """
-        Create a new conversation.
-        Automatically adds the current user as a participant.
-        """
+        # ... (rest of the create method remains the same)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # Create conversation
         conversation = serializer.save()
         
-        # Add current user as participant if not already included
         if request.user not in conversation.participants.all():
             conversation.participants.add(request.user)
         
-        # Return full conversation data
         response_serializer = ConversationSerializer(conversation)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'])
     def add_participant(self, request, conversation_id=None):
-        """
-        Add a participant to an existing conversation.
-        """
+        # ... (rest of the add_participant method remains the same)
         conversation = self.get_object()
         user_id = request.data.get('user_id')
         
@@ -92,15 +56,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Participant added successfully'})
         except User.DoesNotExist:
             return Response(
-                {'error': 'User not found'}, 
+                {'error': 'User not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
     
     @action(detail=True, methods=['post'])
     def remove_participant(self, request, conversation_id=None):
-        """
-        Remove a participant from an existing conversation.
-        """
+        # ... (rest of the remove_participant method remains the same)
         conversation = self.get_object()
         user_id = request.data.get('user_id')
         
@@ -110,17 +72,13 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Participant removed successfully'})
         except User.DoesNotExist:
             return Response(
-                {'error': 'User not found'}, 
+                {'error': 'User not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-
+# Update your MessageViewSet
 class MessageViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing messages.
-    Provides CRUD operations for messages.
-    """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
     lookup_field = 'message_id'
     
     def get_queryset(self):
@@ -138,32 +96,38 @@ class MessageViewSet(viewsets.ModelViewSet):
         return MessageSerializer
     
     def create(self, request, *args, **kwargs):
-        """
-        Send a new message to an existing conversation.
-        """
         # Set sender to current user
         request.data['sender'] = request.user.user_id
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        message = serializer.save()
+        # Verify the user is a participant of the specified conversation
+        conversation_id = request.data.get('conversation')
+        try:
+            conversation = Conversation.objects.get(conversation_id=conversation_id)
+            if request.user not in conversation.participants.all():
+                return Response(
+                    {'error': 'You are not a participant in this conversation'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        except Conversation.DoesNotExist:
+            return Response(
+                {'error': 'Conversation not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-        # Return full message data
+        message = serializer.save()
         response_serializer = MessageSerializer(message)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['get'])
     def by_conversation(self, request):
-        """
-        Get all messages for a specific conversation.
-        Usage: /api/messages/by_conversation/?conversation_id=<uuid>
-        """
         conversation_id = request.query_params.get('conversation_id')
         
         if not conversation_id:
             return Response(
-                {'error': 'conversation_id parameter is required'}, 
+                {'error': 'conversation_id parameter is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -177,32 +141,6 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Conversation.DoesNotExist:
             return Response(
-                {'error': 'Conversation not found or access denied'}, 
+                {'error': 'Conversation not found or access denied'},
                 status=status.HTTP_404_NOT_FOUND
             )
-    
-    def update(self, request, *args, **kwargs):
-        """
-        Override update to only allow message owner to edit.
-        """
-        message = self.get_object()
-        if message.sender != request.user:
-            return Response(
-                {'error': 'You can only edit your own messages'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().update(request, *args, **kwargs)
-    
-    def destroy(self, request, *args, **kwargs):
-        """
-        Override destroy to only allow message owner to delete.
-        """
-        message = self.get_object()
-        if message.sender != request.user:
-            return Response(
-                {'error': 'You can only delete your own messages'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return super().destroy(request, *args, **kwargs)
-    
-    #filters 
