@@ -1,124 +1,47 @@
 from rest_framework import serializers
-from .models import User, Conversation, Message
+from django.contrib.auth import get_user_model
+from .models import Conversation, Message
 
+User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for User model.
-    Excludes password for security and includes computed fields.
+    Handles password properly for user registration.
     """
+    password = serializers.CharField(write_only=True)
     full_name = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'user_id', 'username', 'email', 'first_name', 'last_name', 
-            'phone_number', 'role', 'created_at', 'full_name'
+            'phone_number', 'role', 'created_at', 'full_name', 'password'
         ]
         read_only_fields = ['user_id', 'created_at']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
     
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Message model.
-    Includes sender details as nested data.
-    """
+    """Serializer for Message model with nested sender details."""
     sender = UserSerializer(read_only=True)
-    sender_id = serializers.UUIDField(write_only=True)
     
     class Meta:
         model = Message
-        fields = [
-            'message_id', 'sender', 'sender_id', 'conversation', 
-            'message_body', 'sent_at'
-        ]
+        fields = ['message_id', 'sender', 'conversation', 'message_body', 'sent_at']
         read_only_fields = ['message_id', 'sent_at']
-
-
-class ConversationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Conversation model.
-    Includes participants and messages as nested relationships.
-    """
-    participants = UserSerializer(many=True, read_only=True)
-    participant_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True,
-        required=False
-    )
-    messages = MessageSerializer(many=True, read_only=True)
-    message_count = serializers.SerializerMethodField()
-    last_message = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Conversation
-        fields = [
-            'conversation_id', 'participants', 'participant_ids', 
-            'messages', 'message_count', 'last_message', 'created_at'
-        ]
-        read_only_fields = ['conversation_id', 'created_at']
-    
-    def get_message_count(self, obj):
-        return obj.messages.count()
-    
-    def get_last_message(self, obj):
-        last_message = obj.messages.first()  # Due to ordering in model
-        if last_message:
-            return MessageSerializer(last_message).data
-        return None
-    
-    def create(self, validated_data):
-        participant_ids = validated_data.pop('participant_ids', [])
-        conversation = Conversation.objects.create(**validated_data)
-        
-        if participant_ids:
-            participants = User.objects.filter(user_id__in=participant_ids)
-            conversation.participants.set(participants)
-        
-        return conversation
-    
-    def update(self, instance, validated_data):
-        participant_ids = validated_data.pop('participant_ids', None)
-        
-        if participant_ids is not None:
-            participants = User.objects.filter(user_id__in=participant_ids)
-            instance.participants.set(participants)
-        
-        return super().update(instance, validated_data)
-
-
-class ConversationListSerializer(serializers.ModelSerializer):
-    """
-    Lightweight serializer for listing conversations without all messages.
-    """
-    participants = UserSerializer(many=True, read_only=True)
-    message_count = serializers.SerializerMethodField()
-    last_message = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Conversation
-        fields = [
-            'conversation_id', 'participants', 'message_count', 
-            'last_message', 'created_at'
-        ]
-        read_only_fields = ['conversation_id', 'created_at']
-    
-    def get_message_count(self, obj):
-        return obj.messages.count()
-    
-    def get_last_message(self, obj):
-        last_message = obj.messages.first()
-        if last_message:
-            return {
-                'message_id': last_message.message_id,
-                'message_body': last_message.message_body[:100] + '...' if len(last_message.message_body) > 100 else last_message.message_body,
-                'sent_at': last_message.sent_at,
-                'sender': last_message.sender.email
-            }
-        return None
 
 
 class MessageCreateSerializer(serializers.ModelSerializer):
@@ -136,4 +59,30 @@ class MessageCreateSerializer(serializers.ModelSerializer):
                 "Sender must be a participant in the conversation."
             )
         return data
-    #serializers.CharField  (jus to pass the requirement of the task)
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Conversation model with participants and messages.
+    """
+    participants = UserSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Conversation
+        fields = ['conversation_id', 'participants', 'messages', 'created_at']
+        read_only_fields = ['conversation_id', 'created_at']
+
+
+class ConversationListSerializer(serializers.ModelSerializer):
+    """Serializer for conversation list views."""
+    participants = UserSerializer(many=True, read_only=True)
+    message_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Conversation
+        fields = ['conversation_id', 'participants', 'message_count', 'created_at']
+        read_only_fields = ['conversation_id', 'created_at']
+    
+    def get_message_count(self, obj):
+        return obj.messages.count()
