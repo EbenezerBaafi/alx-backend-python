@@ -12,6 +12,22 @@ from .serializers import (
     MessageSerializer, 
     MessageCreateSerializer
 )
+# Add this import at the top of chats/views.py
+from .permissions import (
+    IsOwnerOrReadOnly,
+    IsParticipantInConversation, 
+    IsMessageOwner,
+    CanAccessConversation
+)
+
+# Update your ConversationViewSet
+class ConversationViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, CanAccessConversation]
+    # ... rest of your code
+
+# Update your MessageViewSet  
+class MessageViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsMessageOwner]
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
