@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
-from .models import User, Conversation, Message
+from .models import Conversation, Message, User
 from .serializers import (
     UserSerializer,
     ConversationSerializer,
@@ -11,8 +11,17 @@ from .serializers import (
     MessageSerializer,
     MessageCreateSerializer
 )
-# Add this import at the top of chats/views.py
 from .permissions import IsParticipantOfConversation
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Viewset for viewing users.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'user_id'
+
 
 # Update your ConversationViewSet
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -143,3 +152,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                 {'error': 'Conversation not found or access denied'},
                 status=status.HTTP_404_NOT_FOUND
             )
+        
+
+  
+

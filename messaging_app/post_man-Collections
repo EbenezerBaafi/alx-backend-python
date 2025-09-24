@@ -1,0 +1,89 @@
+# Authentication
+# Registration
+{
+    'first_name': 'kofi',
+    'last_name': 'cedi',
+    'email': 'kc@gmail.com',
+    'phone_number': '+233798075345',
+    'password': 'strongpassword123',
+    'role': 'guest'
+}
+
+# Outcome of registration
+{
+    'user_id': '5f62c57d-dca4-4fe7-bc42-af61c17c04c0',
+    'first_name': 'kofi',
+    'last_name': 'cedi',
+    'email': 'kc@gmail.com',
+    'phone_number': '+254798075345',
+    'password': 'strongpassword123',
+    'role': 'guest',
+    'created_at': '2025-06-25T12:34:56.789Z',
+    'updated_at': '2025-06-25T12:34:56.789Z'
+    
+}
+
+# Login
+{
+    'email': 'kc@gmail.com',
+    'password': 'strongpassword123'
+}
+
+# Outcome for login
+{
+    'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4NzU5MjA4LCJqdGkiOiI2Y2YyY2E3Y2E0Y2I0NDNhODg3YjI3Y2EwYzQyYjI5ZCIsInVzZXJfaWQiOiI1ZjYyYzU3ZC1kY2E0LTRmZTctYmM0Mi1hZjYxYzE3YzA0YzAifQ.7v8Xo6rX9n8vZlH4KXGfX9m5nY2xJ5k3bXQ8vX9m5n',
+    'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTY5MTMyMzIwOCwianRpIjoiY2YxY2E3YzE3YzE3NDNhODg3YjI3Y2EwYzQyYjI5ZCIsInVzZXJfaWQiOiI1ZjYyYzU3ZC1kY2E0LTRmZTctYmM0Mi1hZjYxYzE3YzA0YzAifQ.Df8Xo6rX9n8vZlH4KXGfX9m5nY2xJ5k3bXQ8vX9m5n',
+    'user': {
+        'user_id': '5f62c57d-dca4-4fe7-bc42-af61c17c04c0',
+        'first_name': 'Kofi',
+        'last_name': 'Cedi',
+        'email': 'kc@gmail.com',
+        'phone_number': '+233798075345',
+        'role': 'guest',
+        'created_at': '2025-06-25T12:34:56.789Z',
+        'updated_at': '2025-06-25T12:34:56.789Z'
+    }
+}
+
+# Send Message
+{
+    'sender': '5f62c57d-dca4-4fe7-bc42-af61c17c04c0',
+    'conversation': 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6',
+    'message_body': 'Have fun!'
+    
+}
+
+# Outcome for sending message
+{
+    'message_id': 'd4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9',
+    'sender': '5f62c57d-dca4-4fe7-bc42-af61c17c04c0',
+    'conversation': 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6',
+    'message_body': 'Have fun!',
+    'sent_at': '2025-06-25T12:45:00.123Z'
+}
+
+# Conversation
+{
+    'participants': ['5f62c57d-dca4-4fe7-bc42-af61c17c04c0', '6g73d68e-edf5-4a6b-8c9d-0e1f2a3b4c5d'],
+    'created_at': '2025-06-25T12:40:00.456Z',
+    'updated_at': '2025-06-25T12:40:00.456Z'
+}
+
+# Fetching conversation messages
+{
+    'conversation_id': 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6',
+    'messages': [
+        {
+            'message_id': 'd4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9',
+            'sender': '5f62c57d-dca4-4fe7-bc42-af61c17c04c0',
+            'message_body': 'Have fun!',
+            'sent_at': '2024-06-25T12:45:00.123Z'
+        },
+        {
+            'message_id': 'e5f6g7h8-i9j0-k1l2-m3n4-o5p6q7r8s9t0',
+            'sender': '6g73d68e-edf5-4a6b-8c9d-0e1f2a3b4c5d',
+            'message_body': 'Alright, you too!',
+            'sent_at': '2024-06-25T12:46:00.456Z'
+        }
+    ]
+}
