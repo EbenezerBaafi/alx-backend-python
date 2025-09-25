@@ -1,9 +1,9 @@
-# chats/middleware.py
 import logging
 from datetime import datetime, timedelta
 import os
 from django.conf import settings
 from django.http import HttpResponseForbidden, JsonResponse
+from django.contrib.auth.models import AnonymousUser
 import json
 from collections import defaultdict, deque
 
@@ -179,3 +179,96 @@ class OffensiveLanguageMiddleware:
         while (self.ip_requests[ip_address] and 
                self.ip_requests[ip_address][0] < cutoff_time):
             self.ip_requests[ip_address].popleft()
+
+
+class RolepermissionMiddleware:
+    """
+    Middleware that checks the user's role (admin or moderator) before allowing access.
+    Returns 403 Forbidden if the user is not admin or moderator.
+    """
+    
+    def __init__(self, get_response):
+        """
+        Initialize the middleware with the get_response callable.
+        This is called once when the web server starts.
+        """
+        self.get_response = get_response
+
+    def __call__(self, request):
+        """
+        Process the request and check user roles before allowing access.
+        This method is called for each request.
+        """
+        # Check if user is authenticated
+        if isinstance(request.user, AnonymousUser) or not request.user.is_authenticated:
+            # Allow unauthenticated users to access login/register pages
+            if self._is_public_view(request):
+                response = self.get_response(request)
+                return response
+            else:
+                return HttpResponseForbidden(
+                    json.dumps({
+                        "error": "Authentication required",
+                        "message": "You must be logged in to access this resource."
+                    }),
+                    content_type='application/json'
+                )
+        
+        # Check user role - assuming role is stored in user profile or as user attribute
+        user_role = self._get_user_role(request.user)
+        
+        if user_role not in ['admin', 'moderator']:
+            return HttpResponseForbidden(
+                json.dumps({
+                    "error": "Access denied", 
+                    "message": "Admin or moderator role required.",
+                    "user_role": user_role,
+                    "required_roles": ["admin", "moderator"]
+                }),
+                content_type='application/json'
+            )
+        
+        # If user has proper role, continue with the request
+        response = self.get_response(request)
+        return response
+    
+    def _get_user_role(self, user):
+        """
+        Extract user role from user object.
+        Modify this method based on how roles are stored in your system.
+        """
+        # Option 1: If role is stored as user attribute
+        if hasattr(user, 'role'):
+            return user.role
+        
+        # Option 2: If using user groups
+        if user.groups.filter(name__in=['admin', 'moderator']).exists():
+            group_name = user.groups.first().name
+            return group_name.lower()
+        
+        # Option 3: If using user profile with role field
+        if hasattr(user, 'profile') and hasattr(user.profile, 'role'):
+            return user.profile.role
+        
+        # Option 4: Check if user is Django superuser
+        if user.is_superuser:
+            return 'admin'
+        
+        # Default: return regular user role
+        return 'user'
+    
+    def _is_public_view(self, request):
+        """
+        Define which views should be accessible without role checking.
+        Modify this list based on your application needs.
+        """
+        public_paths = [
+            '/login/',
+            '/register/',
+            '/logout/',
+            '/admin/login/',
+            '/accounts/login/',
+        ]
+        
+        # Check if current path is in public paths
+        return any(request.path.startswith(path) for path in public_paths)
