@@ -6,7 +6,7 @@ from django.contrib.auth.models import Users
 # Model to store messages between users
 class Message(models.Model):
     sender = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='sent_messages')
-    reciever = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='received_messages')
+    receiver = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='received_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
