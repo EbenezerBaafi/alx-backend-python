@@ -16,3 +16,5 @@ def message_detail(request, message_id):
     
     return render(request, 'messaging/message_detail.html', {'message': message})
 
+    # user.delete(), delete_user
+    #Message.objects.filter", "delete()
