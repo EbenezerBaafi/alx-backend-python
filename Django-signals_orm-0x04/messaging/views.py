@@ -52,7 +52,7 @@ def reply_to_message(request, message_id):
 # Message.objects.filter()
 
 @login_required
-def delete_account(request):
+def delete_user(request):
     """View to handle user account deletion."""
     if request.method == 'POST':
         user = request.user

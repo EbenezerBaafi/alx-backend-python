@@ -86,3 +86,5 @@ def cleanup_user_data(sender, instance, **kwargs):
         **kwargs: Additional keyword arguments
     """
     pass
+
+# Message.objects.filter(), delete()
