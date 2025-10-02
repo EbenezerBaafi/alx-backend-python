@@ -72,3 +72,5 @@ def inbox(request):
     return render(request, 'messaging/inbox.html', {
         'unread_messages': unread_messages
     })
+
+#.only()
