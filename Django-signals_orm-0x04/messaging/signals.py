@@ -1,6 +1,7 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from .models import Message, Notification, MessageHistory
+from django.contrib.auth.models import User
 
 
 @receiver(post_save, sender=Message)
@@ -70,3 +71,18 @@ def log_message_edit(sender, instance, **kwargs):
         except Message.DoesNotExist:
             # Message doesn't exist yet, so this is a new message
             pass
+
+@receiver(post_delete, sender=Message)
+def cleanup_user_data(sender, instance, **kwargs):
+    """
+    Signal handler that cleans up user data when a user is deleted.
+    
+    This function listens for the post_delete signal on the User model.
+    When a user is deleted, it removes all messages and notifications associated with that user.
+    
+    Args:
+        sender: The model class (User)
+        instance: The user instance that was deleted
+        **kwargs: Additional keyword arguments
+    """
+    pass

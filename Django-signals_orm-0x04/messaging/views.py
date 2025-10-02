@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Message, Notification
 from django.db import models
+from django.contrib.auth import logout
+from django.contrib import messages
 
 # Create your views here.
 
@@ -45,4 +47,18 @@ def reply_to_message(request, message_id):
             )
             return redirect('message_detail', message_id=reply.id)
     
-    return redirect(to='message_detail', message_id=message_id)
+    return redirect(to='message_detail', message_id=message_id) 
+
+# Message.objects.filter()
+
+@login_required
+def delete_account(request):
+    """View to handle user account deletion."""
+    if request.method == 'POST':
+        user = request.user
+        logout(request)
+        user.delete()
+        messages.success(request, "Your account has been deleted successfully.")
+        return redirect('home')  # Redirect to home or login page after deletion
+    
+    return render(request, 'messaging/delete_account.html')

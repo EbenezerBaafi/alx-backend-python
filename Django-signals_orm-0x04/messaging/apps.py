@@ -11,3 +11,7 @@ class MessagingConfig(AppConfig):
     #    This ensures that signal handlers are registered.
     #   """
         # import messaging.signals  
+
+    def ready(self):
+        """Import signals when the app is ready."""
+        import messaging.signals    
