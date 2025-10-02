@@ -27,6 +27,20 @@ class Message(models.Model):
         blank=True,
         related_name='edited_messages'
     )
+    parent_message = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='replies'
+    )
+
+    def get_thread(self):
+        # Get all replies in the conversation thread
+        return Message.objects.filter(
+            models.Q(id=self.id) |
+            models.Q(parent_message=self) 
+        ).select_related('sender', 'receiver').prefetch_related('replies').order_by('timestamp')
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username} at {self.timestamp}"
