@@ -4,6 +4,9 @@ from .models import Message, Notification
 from django.db import models
 from django.contrib.auth import logout
 from django.contrib import messages
+from django.views.decorators.cache import cache_page
+
+
 
 # Create your views here.
 
@@ -73,4 +76,28 @@ def inbox(request):
         'unread_messages': unread_messages
     })
 
+@cache_page(60)
+@login_required
+def message_detail(request, message_id):
+    """View to display a specific message and its replies."""
+    message = get_object_or_404(
+        Message.objects.select_related('sender', 'receiver')
+                      .prefetch_related('replies__sender', 'replies__receiver'),
+        models.Q(id=message_id) & (models.Q(receiver=request.user) | models.Q(sender=request.user))
+    )
+    
+    if not message.is_read and message.receiver == request.user:
+        message.is_read = True
+        message.save()
+        
+        # Mark related notification as read
+        Notification.objects.filter(user=request.user, message=message).update(is_read=True)
+    
+    # Get the entire conversation thread
+    thread = message.get_thread().order_by('timestamp')
+    
+    return render(request, 'messaging/message_detail.html', {
+        'message': message,
+        'thread': thread
+    })
 #.only()
