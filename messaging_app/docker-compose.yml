@@ -50,3 +50,5 @@ volumes:
 networks:
   messaging_network:
     driver: bridge
+
+# python3 manage.py runserver
