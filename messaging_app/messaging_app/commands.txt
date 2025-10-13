@@ -1,0 +1,110 @@
+# Commands for Setting Up Nginx Ingress Controller and Applying Ingress Configuration
+
+# ===================================
+# Step 1: Install Nginx Ingress Controller
+# ===================================
+
+# For Minikube (easiest method):
+minikube addons enable ingress
+
+# OR for standard Kubernetes cluster:
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+
+# Verify Ingress Controller is running:
+kubectl get pods -n ingress-nginx
+
+# Wait for Ingress Controller to be ready:
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=120s
+
+# ===================================
+# Step 2: Apply the Ingress Configuration
+# ===================================
+
+# Apply the ingress.yaml file:
+kubectl apply -f ingress.yaml
+
+# ===================================
+# Step 3: Verify Ingress Configuration
+# ===================================
+
+# Check if Ingress resource is created:
+kubectl get ingress
+
+# Get detailed information about the Ingress:
+kubectl describe ingress django-messaging-ingress
+
+# Check Ingress Controller logs:
+kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
+
+# ===================================
+# Step 4: Configure Local DNS (for testing)
+# ===================================
+
+# Get Minikube IP:
+minikube ip
+
+# Add to /etc/hosts (on Linux/Mac) or C:\Windows\System32\drivers\etc\hosts (Windows):
+# Replace <MINIKUBE_IP> with the actual IP from above command
+# Example: 192.168.49.2 django-messaging.local
+echo "$(minikube ip) django-messaging.local" | sudo tee -a /etc/hosts
+
+# ===================================
+# Step 5: Test the Ingress
+# ===================================
+
+# Test API endpoint:
+curl http://django-messaging.local/api/
+
+# Test admin endpoint:
+curl http://django-messaging.local/admin/
+
+# Test with specific host header (alternative):
+curl -H "Host: django-messaging.local" http://$(minikube ip)/api/
+
+# ===================================
+# Step 6: Access via Browser
+# ===================================
+
+# Open in browser:
+# http://django-messaging.local/
+# http://django-messaging.local/api/
+# http://django-messaging.local/admin/
+
+# ===================================
+# Optional: Enable Ingress Tunnel (for Minikube)
+# ===================================
+
+# If using Minikube, run this in a separate terminal:
+minikube tunnel
+
+# ===================================
+# Troubleshooting Commands
+# ===================================
+
+# Check all resources:
+kubectl get all -n ingress-nginx
+
+# Check Ingress events:
+kubectl get events --field-selector involvedObject.kind=Ingress
+
+# Check if service endpoints are available:
+kubectl get endpoints django-messaging-service
+
+# View Ingress Controller configuration:
+kubectl exec -n ingress-nginx -it $(kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].metadata.name}') -- cat /etc/nginx/nginx.conf
+
+# ===================================
+# Cleanup Commands
+# ===================================
+
+# Delete Ingress:
+kubectl delete ingress django-messaging-ingress
+
+# Delete Ingress Controller (if needed):
+kubectl delete namespace ingress-nginx
+
+# OR for Minikube:
+minikube addons disable ingress
