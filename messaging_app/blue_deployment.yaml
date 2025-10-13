@@ -1,0 +1,108 @@
+---
+# Blue Deployment - Current/Stable Version
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-messaging-blue
+  labels:
+    app: django-messaging
+    version: blue
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: django-messaging
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: django-messaging
+        version: blue
+    spec:
+      containers:
+      - name: django-app
+        # Blue version - current stable version
+        image: your-dockerhub-username/django-messaging-app:v1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        # Version identifier
+        - name: VERSION
+          value: "blue-v1.0"
+        - name: DEPLOYMENT_COLOR
+          value: "blue"
+        # Django settings
+        - name: DJANGO_SETTINGS_MODULE
+          value: "messaging_project.settings"
+        - name: DEBUG
+          value: "False"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        # Database configuration
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "messaging_db"
+        # Secrets
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: db-user
+              optional: true
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: db-password
+              optional: true
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: django-secrets
+              key: secret-key
+              optional: true
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      # Init container for migrations
+      initContainers:
+      - name: django-migrations
+        image: your-dockerhub-username/django-messaging-app:v1.0
+        command: ['python', 'manage.py', 'migrate', '--noinput']
+        env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: "messaging_project.settings"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "messaging_db"
