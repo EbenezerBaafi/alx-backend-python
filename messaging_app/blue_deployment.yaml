@@ -22,8 +22,8 @@ spec:
     spec:
       containers:
       - name: django-app
-        # Blue version - current stable version
-        image: your-dockerhub-username/django-messaging-app:v1.0
+        # Blue version - updated to v2.0
+        image: your-dockerhub-username/django-messaging-app:v2.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
