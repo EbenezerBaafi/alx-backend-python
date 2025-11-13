@@ -78,6 +78,8 @@ pipeline {
         }
     }
     
+
+    // messaging_app/requirements.txt", "pip3 install
     post {
         always {
             echo 'Pipeline execution completed!'
