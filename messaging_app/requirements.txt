@@ -77,6 +77,41 @@ yfinance==0.2.59
 
 
 
-pytest==7.4.3
-pytest-html==4.1.1
-pytest-cov==4.1.0
+# Requirement for postgresql
+# Django Framework
+Django>=4.2,<5.0
+
+# PostgreSQL Database Driver
+psycopg2-binary>=2.9.9
+
+# Alternative: psycopg (version 3, newer and faster)
+# psycopg[binary]>=3.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-django>=4.5.0
+pytest-cov>=4.1.0
+coverage>=7.3.0
+
+# Code Quality
+flake8>=6.1.0
+black>=23.7.0
+pylint>=3.0.0
+
+# Django REST Framework (if using API)
+djangorestframework>=3.14.0
+
+# CORS headers
+django-cors-headers>=4.3.0
+
+# Environment variables
+python-decouple>=3.8
+python-dotenv>=1.0.0
+
+# Additional useful packages
+django-extensions>=3.2.0
+django-debug-toolbar>=4.2.0
+
+# For production (optional)
+gunicorn>=21.2.0
+whitenoise>=6.5.0
