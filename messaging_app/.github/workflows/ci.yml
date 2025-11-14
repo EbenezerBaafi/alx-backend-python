@@ -1,4 +1,4 @@
-name: Django CI with MySQL
+name: Django CI with PostgreSQL
 
 on:
   push:
@@ -11,20 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:15
         env:
-          MYSQL_ROOT_PASSWORD: root_password
-          MYSQL_DATABASE: test_messaging_db
-          MYSQL_USER: django_user
-          MYSQL_PASSWORD: django_password
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_messaging_db
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     strategy:
       matrix:
@@ -50,7 +49,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libmysqlclient-dev pkg-config
+        sudo apt-get install -y postgresql-client libpq-dev
 
     - name: Install Python dependencies
       run: |
@@ -58,52 +57,40 @@ jobs:
         pip install -r requirements.txt
         pip install coverage pytest-django pytest-cov
 
-    - name: Wait for MySQL to be ready
+    - name: Wait for PostgreSQL to be ready
       run: |
-        for i in {1..30}; do
-          if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -proot_password --silent; then
-            echo "MySQL is ready!"
-            break
-          fi
-          echo "Waiting for MySQL... ($i/30)"
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
           sleep 2
         done
-
-    - name: Set up test database
-      env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_NAME: test_messaging_db
-        DB_USER: django_user
-        DB_PASSWORD: django_password
-      run: |
-        mysql -h127.0.0.1 -P3306 -uroot -proot_password -e "GRANT ALL PRIVILEGES ON *.* TO 'django_user'@'%';"
-        mysql -h127.0.0.1 -P3306 -uroot -proot_password -e "FLUSH PRIVILEGES;"
+        echo "PostgreSQL is ready!"
 
     - name: Run Django migrations
       env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
+        DB_ENGINE: django.db.backends.postgresql
         DB_NAME: test_messaging_db
-        DB_USER: django_user
-        DB_PASSWORD: django_password
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        DB_HOST: localhost
+        DB_PORT: 5432
         DJANGO_SETTINGS_MODULE: messaging_app.settings
-        SECRET_KEY: test-secret-key-for-ci
+        SECRET_KEY: test-secret-key-for-ci-pipeline
       run: |
         python manage.py migrate --noinput
 
     - name: Run tests with coverage
       env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
+        DB_ENGINE: django.db.backends.postgresql
         DB_NAME: test_messaging_db
-        DB_USER: django_user
-        DB_PASSWORD: django_password
+        DB_USER: postgres
+        DB_PASSWORD: postgres
+        DB_HOST: localhost
+        DB_PORT: 5432
         DJANGO_SETTINGS_MODULE: messaging_app.settings
-        SECRET_KEY: test-secret-key-for-ci
+        SECRET_KEY: test-secret-key-for-ci-pipeline
       run: |
         coverage run --source='.' manage.py test
-        coverage report
+        coverage report -m
         coverage xml
 
     - name: Upload coverage to Codecov
@@ -117,8 +104,16 @@ jobs:
     - name: Run linting (flake8)
       run: |
         pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+    - name: Check code formatting (black)
+      run: |
+        pip install black
+        black --check . || echo "Code formatting issues found"
       continue-on-error: true
 
     - name: Archive test results
@@ -129,10 +124,14 @@ jobs:
         path: |
           coverage.xml
           .coverage
+          htmlcov/
 
     - name: Test Summary
       if: always()
       run: |
-        echo "## Test Results for Python ${{ matrix.python-version }} 🧪" >> $GITHUB_STEP_SUMMARY
+        echo "## 🧪 Test Results for Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        coverage report >> $GITHUB_STEP_SUMMARY || true
+        echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        coverage report >> $GITHUB_STEP_SUMMARY || echo "No coverage data available" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
